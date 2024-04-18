@@ -2754,3 +2754,115 @@ fn test_no_files() -> eyre::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_tabs_in_files() -> eyre::Result<()> {
+    let state = RecordState {
+        is_read_only: false,
+        commits: Default::default(),
+        files: vec![
+            File {
+                old_path: None,
+                path: Cow::Borrowed(Path::new("foo/bar")),
+                file_mode: None,
+                sections: vec![
+                    Section::Unchanged {
+                        lines: iter::repeat(Cow::Borrowed("\tthis is some text\n"))
+                            .take(20)
+                            .collect(),
+                    },
+                    Section::Changed {
+                        lines: vec![
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Removed,
+                                line: Cow::Borrowed("before text 1\n"),
+                            },
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Removed,
+                                line: Cow::Borrowed("before text 2\n"),
+                            },
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Added,
+                                line: Cow::Borrowed("after text 1\n"),
+                            },
+                            SectionChangedLine {
+                                is_checked: false,
+                                change_type: ChangeType::Added,
+                                line: Cow::Borrowed("after text 2\n"),
+                            },
+                        ],
+                    },
+                    Section::Unchanged {
+                        lines: vec![Cow::Borrowed("this is some trailing text\n")],
+                    },
+                ],
+            },
+            File {
+                old_path: None,
+                path: Cow::Borrowed(Path::new("baz")),
+                file_mode: None,
+                sections: vec![
+                    Section::Unchanged {
+                        lines: vec![
+                            Cow::Borrowed("\tSome leading text 1\n"),
+                            Cow::Borrowed("\tSome leading text 2\n"),
+                        ],
+                    },
+                    Section::Changed {
+                        lines: vec![
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Removed,
+                                line: Cow::Borrowed("\tbefore text \t1\n"),
+                            },
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Removed,
+                                line: Cow::Borrowed("\tbefore text 2\n"),
+                            },
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Added,
+                                line: Cow::Borrowed("\tafter text \t1\n"),
+                            },
+                            SectionChangedLine {
+                                is_checked: true,
+                                change_type: ChangeType::Added,
+                                line: Cow::Borrowed("after text 2\n"),
+                            },
+                        ],
+                    },
+                    Section::Unchanged {
+                        lines: vec![Cow::Borrowed("\tthis is some trailing text\n")],
+                    },
+                ],
+            },
+        ],
+    };
+    let initial = TestingScreenshot::default();
+    let mut input = TestingInput::new(
+        80,
+        10,
+        [Event::ExpandAll, initial.event(), Event::QuitAccept],
+    );
+    let recorder = Recorder::new(state, &mut input);
+    recorder.run()?;
+
+    insta::assert_snapshot!(initial, @r###"
+    "[File] [Edit] [Select] [View]                                                   "
+    "(~) foo/bar                                                                  (-)"
+    "        ⋮                                                                       "
+    "       18 →   this is some text⏎                                                "
+    "       19 →   this is some text⏎                                                "
+    "       20 →   this is some text⏎                                                "
+    "  [~] Section 1/1                                                            [-]"
+    "    [×] - before text 1⏎                                                        "
+    "    [×] - before text 2⏎                                                        "
+    "    [×] + after text 1⏎                                                         "
+    "###);
+
+    Ok(())
+}
