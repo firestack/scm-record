@@ -3029,6 +3029,14 @@ impl Component for SectionLineView<'_> {
 
     fn draw(&self, viewport: &mut Viewport<Self::Id>, x: isize, y: isize) {
         const NEWLINE_ICON: &str = "⏎";
+
+        fn replace_control_characters(line: &str) -> String {
+            // Characters end up writing over eachother and end up
+            // displaying incorrectly if ignored. Replacing tabs
+            // with a known length string fixes the issue for now.
+            line.replace('\t', "→   ")
+        }
+
         let Self { line_key: _, inner } = self;
         viewport.draw_blank(Rect {
             x: viewport.mask_rect().x,
@@ -3046,7 +3054,7 @@ impl Component for SectionLineView<'_> {
                     viewport.draw_span(x, y, &Span::styled(format!("{line_num:5} "), style));
                 let (line, line_end) = match line.strip_suffix('\n') {
                     Some(line) => (
-                        Span::styled(line, style),
+                        Span::styled(replace_control_characters(line), style),
                         Some(Span::styled(
                             NEWLINE_ICON,
                             Style::default().fg(Color::DarkGray),
@@ -3080,7 +3088,7 @@ impl Component for SectionLineView<'_> {
                 let x = x + change_type_text.width().unwrap_isize();
                 let (line, line_end) = match line.strip_suffix('\n') {
                     Some(line) => (
-                        Span::styled(line, style),
+                        Span::styled(replace_control_characters(line), style),
                         Some(Span::styled(
                             NEWLINE_ICON,
                             Style::default().fg(Color::DarkGray),
