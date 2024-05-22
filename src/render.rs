@@ -9,7 +9,7 @@ use cassowary::{Solver, Variable};
 use num_traits::cast;
 use ratatui::buffer::Buffer;
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Span;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{StatefulWidget, Widget};
 use ratatui::Frame;
 use unicode_width::UnicodeWidthStr;
@@ -521,6 +521,30 @@ impl<'a, ComponentId: Clone + Debug + Eq + Hash> Viewport<'a, ComponentId> {
         }
 
         span_rect
+    }
+
+    /// Draw a [`Line`] directly to the screen at `(x, y)` location.
+    pub fn draw_line(&mut self, x: isize, y: isize, line: &Line) -> Rect {
+        let line_rect = Rect {
+            x,
+            y,
+            width: line.width(),
+            height: 1,
+        };
+        self.current_trace_mut().merge_rect(line_rect);
+
+        let draw_rect = self.rect.intersect(line_rect);
+
+        let draw_rect = match self.mask {
+            Some(mask) => mask.apply(draw_rect),
+            None => draw_rect,
+        };
+        if !draw_rect.is_empty() {
+            let buf_rect = self.translate_rect(draw_rect);
+            line.render(buf_rect, self.buf);
+        }
+
+        line_rect
     }
 
     /// Draw the given text. If the text would overflow the current mask, then
