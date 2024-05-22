@@ -7,10 +7,13 @@ let
 in
 pkgs.mkShell {
   buildInputs = [
-    (pkgs.rust-bin.stable.latest.rust.override {
-      extensions = ["rust-src"];
-    })
+    (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml
+    # {
+    #   extensions = ["rust-src"];
+    # }
+    )
 
+    pkgs.cargo-insta
     # keep this line if you use bash
     pkgs.bashInteractive
   ];

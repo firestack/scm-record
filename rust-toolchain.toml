@@ -1,0 +1,14 @@
+[toolchain]
+
+# Main consumers to consider:
+# - git-branchless: https://github.com/arxanas/git-branchless/blob/master/Cargo.toml
+# - jj: https://github.com/martinvonz/jj/blob/main/Cargo.toml
+channel = "1.74"
+components = [
+	"cargo",
+	"rustc",
+	"rust-std",
+	"rust-docs",
+	"rust-src",
+	"rust-analyzer",
+]
